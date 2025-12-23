@@ -2,10 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+
+[Serializable]
+public class GitHubRelease
+{
+    public List<GitHubAsset> assets;
+}
+
+[Serializable]
+public class GitHubAsset
+{
+    public string name;
+    public string browser_download_url;
+}
 
 [InitializeOnLoad]
 public static class GnubgInstaller
@@ -128,26 +140,20 @@ public static class GnubgInstaller
 
     private static string FindAssetDownloadUrl(string releaseJson, string assetName)
     {
-        var root = MiniJson.Deserialize(releaseJson) as Dictionary<string, object>;
-        if (root == null || !root.TryGetValue("assets", out var assetsObj))
+        // 1. Parse the JSON string into our C# object structure
+        GitHubRelease release = JsonUtility.FromJson<GitHubRelease>(releaseJson);
+
+        // 2. Safety check: ensure assets list isn't null or empty
+        if (release?.assets == null)
             return null;
 
-        if (assetsObj is not List<object> assets)
-            return null;
-
-        foreach (var a in assets)
+        // 3. Search for the specific asset by name
+        foreach (var asset in release.assets)
         {
-            if (a is not Dictionary<string, object> ad)
-                continue;
-
-            if (!ad.TryGetValue("name", out var n))
-                continue;
-
-            if (n?.ToString() != assetName)
-                continue;
-
-            if (ad.TryGetValue("browser_download_url", out var url))
-                return url?.ToString();
+            if (asset.name == assetName)
+            {
+                return asset.browser_download_url;
+            }
         }
 
         return null;
