@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -100,30 +99,27 @@ public static class GnubgInstaller
     // ---------------------------------------------------------------------
     private static string FetchLatestReleaseJson()
     {
-        string api =
-            $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepo}/releases/latest";
+        string owner = "reayd-falmouth";
+        string repo = "gnubg-unity-installer";
+        string url = $"https://api.github.com/repos/{owner}/{repo}/releases/latest";
 
-        using var req = UnityWebRequest.Get(api);
-        req.SetRequestHeader("User-Agent", "Unity-GNUBG-Installer");
+        Debug.Log($"[GNUBG] Requesting URL: {url}");
 
-        var op = req.SendWebRequest();
-        while (!op.isDone)
+        using (var webRequest = UnityWebRequest.Get(url))
         {
-            EditorUtility.DisplayProgressBar(
-                "GNUBG Installer",
-                "Fetching release metadata…",
-                op.progress
-            );
+            // GitHub API REQUIRES a User-Agent header
+            webRequest.SetRequestHeader("User-Agent", "Unity-Gnubg-Installer");
+        
+            var operation = webRequest.SendWebRequest();
+            // Wait for completion (if in Editor) or use async
+        
+            if (webRequest.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"[GNUBG] Error at {url}: {webRequest.error}");
+                return null;
+            }
+            return webRequest.downloadHandler.text;
         }
-
-        EditorUtility.ClearProgressBar();
-
-        if (req.result != UnityWebRequest.Result.Success)
-            throw new Exception(
-                $"GitHub API request failed: {req.error}\n{req.downloadHandler.text}"
-            );
-
-        return req.downloadHandler.text;
     }
 
     private static string FindAssetDownloadUrl(string releaseJson, string assetName)
