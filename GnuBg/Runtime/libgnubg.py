@@ -281,7 +281,7 @@ def main():
     jacoby = os.getenv("JACOBY", "false").lower() == "true"
 
     # Retrieve the 'ACTION' environment variable to determine what operation to perform.
-    action = os.getenv("ACTION")
+    action = os.getenv("ACTION", "hint")
 
     # Retrieve the 'MOVES' environment variable to define the moves for this turn.
     moves = os.getenv("MOVES", [])
@@ -290,7 +290,7 @@ def main():
     resign = os.getenv("RESIGN", "")
 
     # Retrieve the 'RESIGN' environment variable to define the moves for this turn.
-    gnubg_id = os.getenv("GAME_ID", "")
+    gnubg_id = os.getenv("GAME_ID", "AEAAAAAAAgAAAA:cAluAAAAAAAA")
 
     # Based on the action specified, execute the corresponding function.
     # This switches between creating a match, updating a match, or requesting a hint.
