@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using gnubg_unity_installer.GnuBg.Runtime;
+using GnuBg.Runtime;
 using UnityEditor;
 using UnityEngine;
 

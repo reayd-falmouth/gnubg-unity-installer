@@ -2,7 +2,7 @@
   "name": "gnubg.unity.installer",
   "version": "0.1.0",
   "displayName": "GNUBG Installer",
-  "description": "Downloads GNUBG binaries from GitHub Releases into Assets/StreamingAssets/gnubg/<platform>.",
+  "description": "Downloads GNUBG binaries from GitHub Releases into Assets/StreamingAssets/gnubg/.",
   "unity": "2021.3",
   "keywords": ["gnubg", "backgammon"],
   "author": { "name": "David Reay <dr323090@falmouth.ac.uk>" }

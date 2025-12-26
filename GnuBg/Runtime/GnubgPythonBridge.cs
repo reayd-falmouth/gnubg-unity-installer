@@ -7,7 +7,7 @@ using UnityEngine;
 
 // Needed for Application.streamingAssetsPath
 
-namespace gnubg_unity_installer.GnuBg.Runtime
+namespace GnuBg.Runtime
 {
     public static class GnubgPythonBridge
     {
