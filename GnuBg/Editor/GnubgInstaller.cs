@@ -86,6 +86,23 @@ public static class GnubgInstaller
         {
             CopyDirectory(tempExtractDir, targetDir);
         }
+        
+        // Copy libgnubg.py from package Runtime folder into bin/
+        string sourcePy = Path.Combine("Packages", "gnubg.unity.installer", "GnuBg", "Runtime", "libgnubg.py");
+        string targetBin = Path.Combine(targetDir, "bin");
+
+        if (File.Exists(sourcePy))
+        {
+            Directory.CreateDirectory(targetBin); // ensure bin/ exists
+            string destPy = Path.Combine(targetBin, "libgnubg.py");
+            File.Copy(sourcePy, destPy, overwrite: true);
+            Debug.Log("[GNUBG Installer] ✔ Copied libgnubg.py into bin/");
+        }
+        else
+        {
+            Debug.LogWarning("[GNUBG Installer] ⚠ libgnubg.py not found in package Runtime folder");
+        }
+
 
 #if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
         string binary = Path.Combine(targetDir, "bin", "gnubg");
