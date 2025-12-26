@@ -88,7 +88,7 @@ public static class GnubgInstaller
         }
         
         // Copy libgnubg.py from package Runtime folder into bin/
-        string sourcePy = Path.Combine("Packages", "gnubg.unity.installer", "GnuBg", "Runtime", "libgnubg.py");
+        string sourcePy = Path.Combine("Packages", "gnubg.unity.installer", "GnuBg", "Unity", "Runtime", "Bridge", "libgnubg.py");
         string targetBin = Path.Combine(targetDir, "bin");
 
         if (File.Exists(sourcePy))
