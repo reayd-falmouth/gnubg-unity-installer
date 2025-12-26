@@ -17,7 +17,7 @@ public static class GnubgInstaller
     private const string AssetLinux   = "gnubg-Linux.zip";
 
     private static readonly string PackageBinaryRoot =
-        Path.Combine("Packages", "gnubg.unity.installer", "Runtime", "Binaries");
+        Path.Combine(Application.dataPath, "StreamingAssets", "gnubg");
 
     [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
     [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
