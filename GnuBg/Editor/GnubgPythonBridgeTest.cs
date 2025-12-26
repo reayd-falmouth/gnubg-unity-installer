@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using gnubg_unity_installer.GnuBg.Runtime;
 using UnityEditor;
 using UnityEngine;
-using App.Scripts.Game.Board.Hints;
 
 /// <summary>
 /// Editor-only integration test for the GNUBG → Python bridge.
