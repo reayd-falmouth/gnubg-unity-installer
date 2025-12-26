@@ -54,7 +54,7 @@ def delete_local_file(file_path):
         print(f"Error: {e.strerror} - {e.filename}")
 
 
-def write_dict_to_json_file(data, m_ref):
+def write_dict_to_json_file(data, m_ref, output_dir):
     """
     Write dictionary to JSON file with better resource management. If the file exists,
     read its content and merge it with the new data before writing it back.
@@ -63,7 +63,7 @@ def write_dict_to_json_file(data, m_ref):
     - data (dict): Data to be written or merged into the file.
     - m_ref (str): Reference name for the match, used to define the file path.
     """
-    filename = f"/tmp/{m_ref}/{m_ref}.json"
+    filename = os.path.join(output_dir, f"{m_ref}.json")
 
     # Ensure the directory exists
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -111,7 +111,7 @@ def load_match(gnubg_id: str, jacoby: str, variation: str):
     gnubg.command(f"set gnubgid {gnubg_id}")
 
 
-def save_match(m_ref: str):
+def save_match(m_ref: str, output_dir: str):
 
     # Collect game identifiers and match information directly from the gnubg module
     data_dict = {
@@ -193,7 +193,7 @@ def save_match(m_ref: str):
         data_dict["bestMove"] = None
 
     # Write the collected data to a JSON file using the match reference as the file name
-    write_dict_to_json_file(data_dict, m_ref)
+    write_dict_to_json_file(data_dict, m_ref, output_dir)
 
 
 def format_move_list_string(input_string):
@@ -248,7 +248,7 @@ def configure_hint_evaluation():
     gnubg.command(f"set evaluation {ctx} evaluation cubeful {cubeful_flag}")
 
 
-def update_match(match_ref, gnubg_id, jacoby, variation, action):
+def update_match(match_ref, gnubg_id, jacoby, variation, action, output_dir):
     """
     Load the match, configure hint eval if needed, then save state.
     """
@@ -260,7 +260,7 @@ def update_match(match_ref, gnubg_id, jacoby, variation, action):
         configure_hint_evaluation()
 
     # 3) capture hint + state
-    save_match(match_ref)
+    save_match(match_ref, output_dir)
 
 
 def main():
@@ -292,6 +292,11 @@ def main():
     # Retrieve the 'RESIGN' environment variable to define the moves for this turn.
     gnubg_id = os.getenv("GAME_ID", "AEAAAAAAAgAAAA:cAluAAAAAAAA")
 
+    output_dir = os.environ.get("GNUBG_OUTPUT_DIR")
+    
+    if not output_dir:
+        raise RuntimeError("GNUBG_OUTPUT_DIR not set")
+    
     # Based on the action specified, execute the corresponding function.
     # This switches between creating a match, updating a match, or requesting a hint.
     if action in [
@@ -310,7 +315,7 @@ def main():
         "play",
     ]:
         # Call the function to update a match specified by the match reference.
-        update_match(match_ref, gnubg_id, jacoby, variation, action)
+        update_match(match_ref, gnubg_id, jacoby, variation, action, output_dir)
     else:
         # Log an error message if an unsupported action is specified.
         logger.error(f"Unsupported action '{action}'")

@@ -69,6 +69,22 @@ namespace gnubg_unity_installer.GnuBg.Runtime
         #endif
             }
         }
+        
+        private static string GetSystemTempRoot()
+        {
+            string[] vars = { "TMPDIR", "TMP", "TEMP" };
+
+            foreach (var v in vars)
+            {
+                var value = Environment.GetEnvironmentVariable(v);
+                if (!string.IsNullOrEmpty(value) && Directory.Exists(value))
+                    return value;
+            }
+
+            throw new InvalidOperationException(
+                "No system temp directory found (TMPDIR/TMP/TEMP)"
+            );
+        }
 
         /// <summary>
         /// Runs GNUBG asynchronously in a background thread.
@@ -82,8 +98,8 @@ namespace gnubg_unity_installer.GnuBg.Runtime
             string action = "hint")
         {
             // Use a temp folder to store output (same as before)
-            string homeDir = Path.Combine(Path.GetTempPath(), matchRef);
-            Directory.CreateDirectory(homeDir);
+            string homeDir = Path.Combine(GetSystemTempRoot(), matchRef);
+            UnityEngine.Debug.Log("Writing to directory: " + homeDir);
 
             var env = new Dictionary<string, string>
             {
@@ -92,7 +108,7 @@ namespace gnubg_unity_installer.GnuBg.Runtime
                 { "VARIATION", variation },
                 { "JACOBY", jacoby.ToString().ToLower() },
                 { "ACTION", action },
-                { "HOME", homeDir }
+                { "GNUBG_OUTPUT_DIR", homeDir }
             };
 
             return await Task.Run(() =>
