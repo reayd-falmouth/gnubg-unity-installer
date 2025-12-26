@@ -11,36 +11,38 @@ using Debug = UnityEngine.Debug;
 public static class GnubgInstaller
 {
     private const string BaseDownloadUrl = "https://github.com/reayd-falmouth/gnubg/releases/download/latest";
-
     private const string AssetWindows = "gnubg-Windows.zip";
     private const string AssetMac     = "gnubg-macOS.zip";
     private const string AssetLinux   = "gnubg-Linux.zip";
 
-    private static readonly string PackageBinaryRoot =
+    private static readonly string InstallPath =
         Path.Combine(Application.dataPath, "StreamingAssets", "gnubg");
 
-    [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
-    [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
-    public static void InstallAllPlatforms()
+    [MenuItem("Tools/GNUBG/Install (Current Platform Only)")]
+    public static void InstallCurrentPlatform()
     {
         try
         {
-            if (!Directory.Exists(PackageBinaryRoot))
-                Directory.CreateDirectory(PackageBinaryRoot);
+            string platform;
+            string asset;
 
 #if UNITY_EDITOR_WIN
-            InstallPlatform("windows", AssetWindows);
+            platform = "windows";
+            asset = AssetWindows;
 #elif UNITY_EDITOR_OSX
-        InstallPlatform("macos", AssetMac);
+            platform = "macos";
+            asset = AssetMac;
 #elif UNITY_EDITOR_LINUX
-        InstallPlatform("linux", AssetLinux);
+            platform = "linux";
+            asset = AssetLinux;
 #else
-        Debug.LogError("[GNUBG Installer] ❌ Unsupported platform.");
-        return;
+            Debug.LogError("[GNUBG Installer] ❌ Unsupported platform.");
+            return;
 #endif
 
+            InstallPlatform(platform, asset);
             AssetDatabase.Refresh();
-            Debug.Log($"[GNUBG Installer] ✅ Installation complete in: {PackageBinaryRoot}");
+            Debug.Log($"[GNUBG Installer] ✅ Installed for platform: {platform}");
         }
         catch (Exception ex)
         {
@@ -55,67 +57,75 @@ public static class GnubgInstaller
     private static void InstallPlatform(string platformFolder, string assetName)
     {
         string url = $"{BaseDownloadUrl}/{assetName}";
-        string targetDir = Path.Combine(PackageBinaryRoot, platformFolder);
-        
         string cacheDir = Path.Combine("Library", "GnubgInstallerCache");
-        if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
+        string tempExtractDir = Path.Combine(cacheDir, platformFolder + "_extract");
+
+        string targetDir = InstallPath;
+        Directory.CreateDirectory(cacheDir);
+        if (Directory.Exists(targetDir)) Directory.Delete(targetDir, true);
+        Directory.CreateDirectory(targetDir);
+        if (Directory.Exists(tempExtractDir)) Directory.Delete(tempExtractDir, true);
+        Directory.CreateDirectory(tempExtractDir);
+
         string zipPath = Path.Combine(cacheDir, assetName);
 
         Debug.Log($"[GNUBG Installer] Downloading {assetName}...");
         DownloadFile(url, zipPath, $"Downloading {assetName}");
 
-        // Clean target directory
-        if (Directory.Exists(targetDir)) Directory.Delete(targetDir, true);
-        Directory.CreateDirectory(targetDir);
+        Debug.Log($"[GNUBG Installer] Extracting to temp dir: {tempExtractDir}");
+        ZipFile.ExtractToDirectory(zipPath, tempExtractDir);
 
-        Debug.Log($"[GNUBG Installer] Extracting to {targetDir}");
-        ZipFile.ExtractToDirectory(zipPath, targetDir);
+        // Flatten nested gnubg-Windows or gnubg-Linux folders
+        string[] subdirs = Directory.GetDirectories(tempExtractDir);
+        if (subdirs.Length == 1 && Directory.Exists(subdirs[0]))
+        {
+            Debug.Log($"[GNUBG Installer] Flattening top-level folder: {Path.GetFileName(subdirs[0])}");
+            CopyDirectory(subdirs[0], targetDir);
+        }
+        else
+        {
+            CopyDirectory(tempExtractDir, targetDir);
+        }
 
-        // Standardize folder structure
-        FlattenIfNestedPlatformFolder(targetDir, platformFolder);
-
-        // Set permissions for Unix-based systems
-        if (platformFolder != "windows")
-            EnsureUnixExecutableBit(Path.Combine(targetDir, "gnubg"));
+#if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
+        string binary = Path.Combine(targetDir, "bin", "gnubg");
+        if (File.Exists(binary)) EnsureUnixExecutableBit(binary);
+#endif
     }
 
     private static void DownloadFile(string url, string outPath, string label)
     {
-        using (var req = UnityWebRequest.Get(url))
-        {
-            req.SetRequestHeader("User-Agent", "Unity-Gnubg-Installer");
-            var op = req.SendWebRequest();
+        using var req = UnityWebRequest.Get(url);
+        req.SetRequestHeader("User-Agent", "Unity-Gnubg-Installer");
 
-            while (!op.isDone)
-            {
-                EditorUtility.DisplayProgressBar("GNUBG Installer", label, op.progress);
-            }
+        var op = req.SendWebRequest();
+        while (!op.isDone)
+            EditorUtility.DisplayProgressBar("GNUBG Installer", label, op.progress);
 
-            if (req.result != UnityWebRequest.Result.Success)
-                throw new Exception($"Failed to download {url}: {req.error}");
+        if (req.result != UnityWebRequest.Result.Success)
+            throw new Exception($"Download failed: {req.error}");
 
-            File.WriteAllBytes(outPath, req.downloadHandler.data);
-        }
+        File.WriteAllBytes(outPath, req.downloadHandler.data);
     }
 
-    private static void FlattenIfNestedPlatformFolder(string targetDir, string platformFolder)
+    private static void CopyDirectory(string sourceDir, string destDir)
     {
-        string nested = Path.Combine(targetDir, platformFolder);
-        if (!Directory.Exists(nested)) return;
+        foreach (string dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            string target = dir.Replace(sourceDir, destDir);
+            Directory.CreateDirectory(target);
+        }
 
-        foreach (var dir in Directory.GetDirectories(nested))
-            Directory.Move(dir, Path.Combine(targetDir, Path.GetFileName(dir)));
-
-        foreach (var file in Directory.GetFiles(nested))
-            File.Move(file, Path.Combine(targetDir, Path.GetFileName(file)));
-
-        Directory.Delete(nested, true);
+        foreach (string file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            string target = file.Replace(sourceDir, destDir);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: true);
+        }
     }
 
     private static void EnsureUnixExecutableBit(string path)
     {
-#if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
-        if (!File.Exists(path)) return;
         try
         {
             var psi = new ProcessStartInfo
@@ -132,6 +142,5 @@ public static class GnubgInstaller
         {
             Debug.LogWarning("[GNUBG Installer] chmod failed: " + e.Message);
         }
-#endif
     }
 }
