@@ -20,6 +20,7 @@ public static class GnubgInstaller
         Path.Combine("Packages", "gnubg.unity.installer", "Runtime", "Binaries");
 
     [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
+    [MenuItem("Tools/GNUBG/Install to Package Folder (Direct Download)")]
     public static void InstallAllPlatforms()
     {
         try
@@ -27,16 +28,23 @@ public static class GnubgInstaller
             if (!Directory.Exists(PackageBinaryRoot))
                 Directory.CreateDirectory(PackageBinaryRoot);
 
+#if UNITY_EDITOR_WIN
             InstallPlatform("windows", AssetWindows);
-            InstallPlatform("macos",   AssetMac);
-            InstallPlatform("linux",   AssetLinux);
+#elif UNITY_EDITOR_OSX
+        InstallPlatform("macos", AssetMac);
+#elif UNITY_EDITOR_LINUX
+        InstallPlatform("linux", AssetLinux);
+#else
+        Debug.LogError("[GNUBG Installer] ❌ Unsupported platform.");
+        return;
+#endif
 
             AssetDatabase.Refresh();
             Debug.Log($"[GNUBG Installer] ✅ Installation complete in: {PackageBinaryRoot}");
         }
         catch (Exception ex)
         {
-            Debug.LogError("[GNUBG Installer] ❌ " + ex.Message);
+            Debug.LogError("[GNUBG Installer] ❌ " + ex);
         }
         finally
         {
@@ -65,21 +73,19 @@ public static class GnubgInstaller
 
         // Standardize folder structure
         FlattenIfNestedPlatformFolder(targetDir, platformFolder);
-        NormalizeExecutableName(targetDir, platformFolder);
 
         // Set permissions for Unix-based systems
         if (platformFolder != "windows")
-            EnsureUnixExecutableBit(Path.Combine(targetDir, "gnubg-cli"));
+            EnsureUnixExecutableBit(Path.Combine(targetDir, "gnubg"));
     }
 
     private static void DownloadFile(string url, string outPath, string label)
     {
         using (var req = UnityWebRequest.Get(url))
         {
-            // GitHub requires a User-Agent even for direct downloads
             req.SetRequestHeader("User-Agent", "Unity-Gnubg-Installer");
-            
             var op = req.SendWebRequest();
+
             while (!op.isDone)
             {
                 EditorUtility.DisplayProgressBar("GNUBG Installer", label, op.progress);
@@ -106,27 +112,25 @@ public static class GnubgInstaller
         Directory.Delete(nested, true);
     }
 
-    private static void NormalizeExecutableName(string targetDir, string platformFolder)
-    {
-        string extension = (platformFolder == "windows") ? ".exe" : "";
-        string cliPath = Path.Combine(targetDir, "gnubg-cli" + extension);
-        if (File.Exists(cliPath)) return;
-
-        string altPath = Path.Combine(targetDir, "gnubg" + extension);
-        if (File.Exists(altPath)) File.Move(altPath, cliPath);
-    }
-
     private static void EnsureUnixExecutableBit(string path)
     {
 #if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
         if (!File.Exists(path)) return;
-        try 
-        { 
-            Process.Start("chmod", $"+x \"{path}\""); 
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "/bin/chmod",
+                Arguments = $"+x \"{path}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var p = Process.Start(psi);
+            p?.WaitForExit();
         }
-        catch (Exception e) 
-        { 
-            Debug.LogWarning("[GNUBG Installer] chmod failed: " + e.Message); 
+        catch (Exception e)
+        {
+            Debug.LogWarning("[GNUBG Installer] chmod failed: " + e.Message);
         }
 #endif
     }
