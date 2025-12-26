@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using GnuBg.Runtime;
+using Gnubg.Unity.Runtime.Bridge;
 using UnityEditor;
 using UnityEngine;
 
