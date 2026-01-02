@@ -12,12 +12,14 @@ public static class GnubgInstaller
 {
     private const string BaseDownloadUrl = "https://github.com/reayd-falmouth/gnubg/releases/download/latest";
     private const string AssetWindows = "gnubg-Windows.zip";
-    private const string AssetMac     = "gnubg-macOS.zip";
+    private const string AssetMacIntel   = "gnubg-macOS-Intel.zip";
+    private const string AssetMacARM     = "gnubg-macOS-ARM64.zip";
     private const string AssetLinux   = "gnubg-Linux.zip";
 
     private static readonly string InstallPath =
         Path.Combine(Application.dataPath, "StreamingAssets", "gnubg");
 
+    [MenuItem("Tools/GNUBG/Install (Current Platform Only)")]
     [MenuItem("Tools/GNUBG/Install (Current Platform Only)")]
     public static void InstallCurrentPlatform()
     {
@@ -31,7 +33,8 @@ public static class GnubgInstaller
             asset = AssetWindows;
 #elif UNITY_EDITOR_OSX
             platform = "macos";
-            asset = AssetMac;
+            // MINIMAL UPDATE: Detect architecture to pick the correct Mac asset
+            asset = IsRunningOnAppleSilicon() ? AssetMacARM : AssetMacIntel;
 #elif UNITY_EDITOR_LINUX
             platform = "linux";
             asset = AssetLinux;
@@ -42,7 +45,7 @@ public static class GnubgInstaller
 
             InstallPlatform(platform, asset);
             AssetDatabase.Refresh();
-            Debug.Log($"[GNUBG Installer] ✅ Installed for platform: {platform}");
+            Debug.Log($"[GNUBG Installer] ✅ Installed for platform: {platform} ({asset})");
         }
         catch (Exception ex)
         {
@@ -159,5 +162,11 @@ public static class GnubgInstaller
         {
             Debug.LogWarning("[GNUBG Installer] chmod failed: " + e.Message);
         }
+    }
+    
+    private static bool IsRunningOnAppleSilicon()
+    {
+        // Check the process architecture of the running Unity Editor
+        return RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
     }
 }
