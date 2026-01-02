@@ -29,7 +29,8 @@ public static class GnubgInstaller
     private const string GitHubRepo  = "gnubg-unity-installer";
 
     private const string AssetWindows = "gnubg-Windows.zip";
-    private const string AssetMac     = "gnubg-macOS.zip";
+    private const string AssetMacIntel   = "gnubg-macOS-Intel.zip";
+    private const string AssetMacARM     = "gnubg-macOS-ARM64.zip";
     private const string AssetLinux   = "gnubg-Linux.zip";
 
     // ---------------------------------------------------------------------
@@ -54,7 +55,11 @@ public static class GnubgInstaller
             Directory.CreateDirectory(PackageBinaryRoot);
 
             InstallPlatform("windows", AssetWindows);
-            InstallPlatform("macos",   AssetMac);
+            // MINIMAL CHANGE: Use the helper to pick the right Mac asset
+            string macAsset = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture 
+                              == System.Runtime.InteropServices.Architecture.Arm64 
+                ? AssetMacARM : AssetMacIntel;
+            InstallPlatform("macos", macAsset);
             InstallPlatform("linux",   AssetLinux);
 
             AssetDatabase.Refresh();
@@ -262,5 +267,11 @@ public static class GnubgInstaller
             Debug.LogWarning("[GNUBG Installer] chmod failed: " + e.Message);
         }
 #endif
+    }
+    
+    private static bool IsRunningOnAppleSilicon()
+    {
+        // Check the process architecture of the running Unity Editor
+        return RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
     }
 }
