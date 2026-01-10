@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -143,7 +143,19 @@ namespace Gnubg.Unity.Runtime.Bridge
 
                     foreach (var kv in env)
                         psi.Environment[kv.Key] = kv.Value;
+// --- ADD THIS BLOCK START ---
+#if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+                        // On macOS, we must point the internal Python engine to our bundled portable library
+                        // This overrides the hardcoded "/install" path from the build machine
+                        string gnubgRoot = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "gnubg"));
+                        string pythonHome = Path.Combine(gnubgRoot, "python");
+                        string pythonLib = Path.Combine(pythonHome, "lib", "python3.10");
 
+                        psi.Environment["PYTHONHOME"] = pythonHome;
+                        psi.Environment["PYTHONPATH"] = pythonLib;
+                        psi.Environment["PYTHONNOUSERSITE"] = "1"; // Prevents interference from other Python installs on your Mac
+#endif
+// --- ADD THIS BLOCK END ---
                     using (var process = new Process { StartInfo = psi })
                     {
                         process.Start();
