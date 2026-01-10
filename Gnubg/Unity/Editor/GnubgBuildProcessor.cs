@@ -96,15 +96,27 @@ public class GnubgBuildProcessor : IPreprocessBuildWithReport
             CopyDirectory(sourceDir, installPath);
             
             // Post-Install: Copy Python Script
-            // Note: Adjust "Packages/..." path if your package structure differs
-            string sourcePy = Path.GetFullPath("Packages/gnubg.unity.installer/GnuBg/Unity/Runtime/libgnubg.py");
-            string targetBin = Path.Combine(installPath, "bin");
+            // 1. Find the file by name (don't include the extension in FindAssets)
+            string[] guids = AssetDatabase.FindAssets("libgnubg t:TextAsset");
 
-            if (File.Exists(sourcePy))
+            if (guids.Length > 0)
             {
-                Directory.CreateDirectory(targetBin);
+                // 2. Convert the GUID to a project-relative path (e.g., "Packages/com.xyz/Runtime/libgnubg.py")
+                string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+    
+                // 3. Convert that to an absolute OS path that File.Copy understands
+                string sourcePy = Path.GetFullPath(assetPath);
+    
+                // 4. Now perform the copy
+                string targetBin = Path.Combine(Application.dataPath, "StreamingAssets", "gnubg", "bin");
+                if (!Directory.Exists(targetBin)) Directory.CreateDirectory(targetBin);
+    
                 File.Copy(sourcePy, Path.Combine(targetBin, "libgnubg.py"), true);
-                Debug.Log("[GNUBG Auto-Installer] ✔ Copied libgnubg.py");
+                Debug.Log($"[GNUBG] Successfully found and copied from: {sourcePy}");
+            }
+            else
+            {
+                Debug.LogError("[GNUBG] Could not find libgnubg.py in any Package or Folder!");
             }
 
             // Post-Install: Permissions (Mac/Linux)
