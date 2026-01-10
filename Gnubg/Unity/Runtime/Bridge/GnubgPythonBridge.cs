@@ -143,19 +143,25 @@ namespace Gnubg.Unity.Runtime.Bridge
 
                     foreach (var kv in env)
                         psi.Environment[kv.Key] = kv.Value;
-// --- ADD THIS BLOCK START ---
-#if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-                        // On macOS, we must point the internal Python engine to our bundled portable library
-                        // This overrides the hardcoded "/install" path from the build machine
-                        string gnubgRoot = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "gnubg"));
-                        string pythonHome = Path.Combine(gnubgRoot, "python");
-                        string pythonLib = Path.Combine(pythonHome, "lib", "python3.10");
+// --- ADDED FOR PORTABILITY ---
+                    string gnubgRoot = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "gnubg"));
 
-                        psi.Environment["PYTHONHOME"] = pythonHome;
-                        psi.Environment["PYTHONPATH"] = pythonLib;
-                        psi.Environment["PYTHONNOUSERSITE"] = "1"; // Prevents interference from other Python installs on your Mac
+#if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+                    // macOS Structure: /gnubg/lib/python3.10
+                    string pythonHome = gnubgRoot;
+                    string pythonLib = Path.Combine(gnubgRoot, "lib", "python3.10");
+                    
+                    psi.Environment["PYTHONHOME"] = pythonHome;
+                    psi.Environment["PYTHONPATH"] = pythonLib;
+                    psi.Environment["PYTHONNOUSERSITE"] = "1"; 
+#elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+                    // Windows Structure: /gnubg/lib/python3.12 (Matching your MSYS2 logs)
+                    string pythonLib = Path.Combine(gnubgRoot, "lib", "python3.12");
+    
+                    psi.Environment["PYTHONHOME"] = gnubgRoot;
+                    psi.Environment["PYTHONPATH"] = pythonLib;
 #endif
-// --- ADD THIS BLOCK END ---
+// --- END PORTABILITY BLOCK ---
                     using (var process = new Process { StartInfo = psi })
                     {
                         process.Start();
