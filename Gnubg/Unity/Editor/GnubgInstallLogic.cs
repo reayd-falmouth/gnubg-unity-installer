@@ -70,7 +70,7 @@ public static class GnubgInstallLogic
         }
         
         // Fallback for Windows/Linux flat structure
-        string rootBinary = Path.Combine(InstallPath, \"bin\", \"gnubg\");
+        string rootBinary = Path.Combine(InstallPath, "bin", "gnubg");
         if (File.Exists(rootBinary)) EnsureUnixExecutableBit(rootBinary);
 #endif
             Debug.Log($"[GNUBG] ✅ Installation successful: {InstallPath}");
