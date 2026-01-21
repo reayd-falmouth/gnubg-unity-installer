@@ -58,15 +58,20 @@ namespace Gnubg.Unity.Runtime.Bridge
         {
             get
             {
-        #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                return "bin";
-        #elif UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-                return "bin";
-        #elif UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
-                return "bin";
-        #else
-                throw new PlatformNotSupportedException("GNUBG not supported on this platform.");
-        #endif
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+                return "bin"; 
+#elif UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+        // Detect if we are running on Apple Silicon (ARM64) or Intel
+        bool isArm = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture 
+                     == System.Runtime.InteropServices.Architecture.Arm64;
+        
+        string archDir = isArm ? "macOS-ARM64" : "macOS-Intel";
+        return Path.Combine(archDir, "bin"); // Returns "macOS-ARM64/bin"
+#elif UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
+        return "bin";
+#else
+        throw new PlatformNotSupportedException("GNUBG not supported on this platform.");
+#endif
             }
         }
         
