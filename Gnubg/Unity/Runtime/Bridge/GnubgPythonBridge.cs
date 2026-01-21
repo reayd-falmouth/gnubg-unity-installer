@@ -152,13 +152,17 @@ namespace Gnubg.Unity.Runtime.Bridge
                     string gnubgRoot = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "gnubg"));
 
 #if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-                    // macOS Structure: /gnubg/lib/python3.10
-                    string pythonHome = gnubgRoot;
-                    string pythonLib = Path.Combine(gnubgRoot, "lib", "python3.10");
+                    // Detect architecture again for the environment variables
+                    bool isArm = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64;
+                    string archDir = isArm ? "macOS-ARM64" : "macOS-Intel";
+                    
+                    // Root is now the specific arch folder (where lib/ and share/ live)
+                    string pythonHome = Path.Combine(gnubgRoot, archDir);
+                    string pythonLib = Path.Combine(pythonHome, "lib", "python3.10");
                     
                     psi.Environment["PYTHONHOME"] = pythonHome;
                     psi.Environment["PYTHONPATH"] = pythonLib;
-                    psi.Environment["PYTHONNOUSERSITE"] = "1"; 
+                    psi.Environment["PYTHONNOUSERSITE"] = "1";
 #elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
                     // Windows Structure: /gnubg/lib/python3.12 (Matching your MSYS2 logs)
                     string pythonLib = Path.Combine(gnubgRoot, "lib", "python3.12");

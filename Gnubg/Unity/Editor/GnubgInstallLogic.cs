@@ -74,19 +74,40 @@ public static class GnubgInstallLogic
 
     private static void CopyPythonScript()
     {
+        // 1. Find the script inside the package/project regardless of its physical path
         string[] guids = AssetDatabase.FindAssets("libgnubg t:TextAsset");
+    
         if (guids.Length > 0)
         {
             string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
             string sourcePy = Path.GetFullPath(assetPath);
-            string targetBin = Path.Combine(InstallPath, "bin");
+
+            // 2. Define the architectures that need this script
+            // Note: Windows and Linux are usually flat, while Mac is side-by-side
+            string[] subFolders = { "macOS-Intel", "macOS-ARM64", "Windows", "Linux" };
+
+            foreach (string folder in subFolders)
+            {
+                // Only copy if the folder actually exists (meaning that platform is installed)
+                string platformPath = Path.Combine(InstallPath, folder);
             
-            if (!Directory.Exists(targetBin)) Directory.CreateDirectory(targetBin);
-            File.Copy(sourcePy, Path.Combine(targetBin, "libgnubg.py"), true);
+                if (Directory.Exists(platformPath))
+                {
+                    string targetBin = Path.Combine(platformPath, "bin");
+                
+                    if (!Directory.Exists(targetBin)) 
+                        Directory.CreateDirectory(targetBin);
+
+                    string destination = Path.Combine(targetBin, "libgnubg.py");
+                    File.Copy(sourcePy, destination, true);
+                
+                    Debug.Log($"[GNUBG] ✔ Bundled libgnubg.py into {folder}/bin/");
+                }
+            }
         }
         else
         {
-            Debug.LogError("[GNUBG] Could not find libgnubg.py in project!");
+            Debug.LogError("[GNUBG] ❌ Could not find libgnubg.py in the Project or Packages! Ensure the script is named libgnubg.py.");
         }
     }
 
