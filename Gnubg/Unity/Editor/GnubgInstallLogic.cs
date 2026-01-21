@@ -61,8 +61,17 @@ public static class GnubgInstallLogic
 
             // 5. Permissions
 #if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
-            string binary = Path.Combine(InstallPath, "bin", "gnubg");
-            if (File.Exists(binary)) EnsureUnixExecutableBit(binary);
+            // Update permissions for both Mac architectures
+            string[] macArchs = { "macOS-ARM64", "macOS-Intel" };
+            foreach (string arch in macArchs)
+            {
+                string binary = Path.Combine(InstallPath, arch, "bin", "gnubg");
+                if (File.Exists(binary)) EnsureUnixExecutableBit(binary);
+            }
+            
+            // Also check the root bin just in case (for Linux/Windows)
+            string rootBinary = Path.Combine(InstallPath, "bin", "gnubg");
+            if (File.Exists(rootBinary)) EnsureUnixExecutableBit(rootBinary);
 #endif
             Debug.Log($"[GNUBG] ✅ Installation successful: {InstallPath}");
         }
@@ -74,40 +83,49 @@ public static class GnubgInstallLogic
 
     private static void CopyPythonScript()
     {
-        // 1. Find the script inside the package/project regardless of its physical path
-        string[] guids = AssetDatabase.FindAssets("libgnubg t:TextAsset");
+        // 1. Try to find the package path formally via Unity's Package list
+        string packagePath = "Packages/gnubg.unity.installer/GnuBg/Unity/Runtime/libgnubg.py";
     
-        if (guids.Length > 0)
+        // 2. If it's not at the hardcoded path, try to find it by name as a fallback
+        if (!File.Exists(Path.GetFullPath(packagePath)))
         {
-            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-            string sourcePy = Path.GetFullPath(assetPath);
+            string[] guids = AssetDatabase.FindAssets("libgnubg");
+            foreach (var guid in guids)
+            {
+                string foundPath = AssetDatabase.GUIDToAssetPath(guid);
+                if (foundPath.EndsWith("libgnubg.py"))
+                {
+                    packagePath = foundPath;
+                    break;
+                }
+            }
+        }
 
-            // 2. Define the architectures that need this script
-            // Note: Windows and Linux are usually flat, while Mac is side-by-side
+        string sourcePy = Path.GetFullPath(packagePath);
+
+        if (File.Exists(sourcePy))
+        {
+            // Define all possible subfolders that need the script
             string[] subFolders = { "macOS-Intel", "macOS-ARM64", "Windows", "Linux" };
 
             foreach (string folder in subFolders)
             {
-                // Only copy if the folder actually exists (meaning that platform is installed)
                 string platformPath = Path.Combine(InstallPath, folder);
-            
                 if (Directory.Exists(platformPath))
                 {
                     string targetBin = Path.Combine(platformPath, "bin");
-                
-                    if (!Directory.Exists(targetBin)) 
-                        Directory.CreateDirectory(targetBin);
+                    if (!Directory.Exists(targetBin)) Directory.CreateDirectory(targetBin);
 
                     string destination = Path.Combine(targetBin, "libgnubg.py");
                     File.Copy(sourcePy, destination, true);
-                
                     Debug.Log($"[GNUBG] ✔ Bundled libgnubg.py into {folder}/bin/");
                 }
             }
         }
         else
         {
-            Debug.LogError("[GNUBG] ❌ Could not find libgnubg.py in the Project or Packages! Ensure the script is named libgnubg.py.");
+            Debug.LogError($"[GNUBG] ❌ Critical Error: Could not find libgnubg.py at {sourcePy}. " +
+                           "Check that the file is in your Package's Runtime folder.");
         }
     }
 
