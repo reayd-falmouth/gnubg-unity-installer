@@ -61,17 +61,17 @@ public static class GnubgInstallLogic
 
             // 5. Permissions
 #if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX
-            // Update permissions for both Mac architectures
-            string[] macArchs = { "macOS-ARM64", "macOS-Intel" };
-            foreach (string arch in macArchs)
-            {
-                string binary = Path.Combine(InstallPath, arch, "bin", "gnubg");
-                if (File.Exists(binary)) EnsureUnixExecutableBit(binary);
-            }
-            
-            // Also check the root bin just in case (for Linux/Windows)
-            string rootBinary = Path.Combine(InstallPath, "bin", "gnubg");
-            if (File.Exists(rootBinary)) EnsureUnixExecutableBit(rootBinary);
+        // Update permissions for both Mac architectures
+        string[] macArchs = { "macOS-ARM64", "macOS-Intel" };
+        foreach (string arch in macArchs)
+        {
+            string binary = Path.Combine(InstallPath, arch, "bin", "gnubg");
+            if (File.Exists(binary)) EnsureUnixExecutableBit(binary);
+        }
+        
+        // Fallback for Windows/Linux flat structure
+        string rootBinary = Path.Combine(InstallPath, \"bin\", \"gnubg\");
+        if (File.Exists(rootBinary)) EnsureUnixExecutableBit(rootBinary);
 #endif
             Debug.Log($"[GNUBG] ✅ Installation successful: {InstallPath}");
         }
