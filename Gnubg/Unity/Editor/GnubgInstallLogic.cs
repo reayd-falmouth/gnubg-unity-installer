@@ -85,7 +85,7 @@ public static class GnubgInstallLogic
     {
         // 1. Define the hardcoded path relative to the Package folder
         // This is the most reliable way to find a file inside a package
-        string packagePath = "Packages/gnubg.unity.installer/GnuBg/Unity/Runtime/libgnubg.py";
+        string packagePath = "Packages/gnubg.unity.installer/Gnubg/Unity/Runtime/libgnubg.py";
         string sourcePy = Path.GetFullPath(packagePath);
 
         // 2. Logging for visibility - so you see exactly where it's looking
@@ -153,4 +153,5 @@ public static class GnubgInstallLogic
         var psi = new ProcessStartInfo { FileName = "chmod", Arguments = $"+x \"{path}\"", UseShellExecute = false };
         Process.Start(psi)?.WaitForExit();
     }
+
 }
