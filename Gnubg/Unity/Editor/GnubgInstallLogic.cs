@@ -9,7 +9,7 @@ using Debug = UnityEngine.Debug;
 
 public static class GnubgInstallLogic
 {
-    public const string BaseDownloadUrl = "https://github.com/reayd-falmouth/gnubg/releases/download/latest";
+    public const string BaseDownloadUrl = "https://github.com/StonesAndDice/gnubg/releases/download/latest";
     public const string AssetWindows = "gnubg-Windows.zip";
     public const string AssetMac     = "gnubg-macOS.zip";
     public const string AssetLinux   = "gnubg-Linux.zip";
@@ -155,3 +155,4 @@ public static class GnubgInstallLogic
     }
 
 }
+
